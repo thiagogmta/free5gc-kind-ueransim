@@ -1,0 +1,37 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+
+  # Mapeamento de portas do container para o host
+  extraPortMappings:
+  - containerPort: 31412  # Porta interna do NodePort do AMF
+    hostPort: 38412      # Porta exposta no host para NGAP
+    protocol: SCTP       # Protocolo SCTP para interface N2
+  - containerPort: 32152   # Porta interna do UPF para GTP-U
+    hostPort: 2152       # Porta exposta no host para GTP-U
+    protocol: UDP        # Protocolo UDP para interface N3
+
+  # Interfaces para observabilidade
+  - containerPort: 30500  # NodePort da WebUI do free5GC
+    hostPort: 30500
+    protocol: TCP
+  - containerPort: 30501  # NodePort do Kubernetes Dashboard
+    hostPort: 30501
+    protocol: TCP
+  - containerPort: 30502  # NodePort do Prometheus
+    hostPort: 30502
+    protocol: TCP
+  - containerPort: 30503  # NodePort do Grafana
+    hostPort: 30503
+    protocol: TCP
+
+# Worker nodes
+- role: worker
+- role: worker
