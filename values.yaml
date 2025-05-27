@@ -1,101 +1,83 @@
-# Software Name : towards5gs-helm
-# SPDX-FileCopyrightText: Copyright (c) 2021 Orange
-# SPDX-License-Identifier: Apache-2.0
+# free5gc-helm/charts/free5gc/values.yaml
 #
-# This software is distributed under the Apache License 2.0,
-# the text of which is available at todo
-# or see the "LICENSE" file for more details.
-#
-# Author: Abderaouf KHICHANE, Ilhem FAJJARI, Ayoub BOUSSELMI
-# Software description: An open-source project providing Helm charts to deploy 5G components (Core + RAN) on top of Kubernetes
-#
-# Default values for free5gc-chart.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Este arquivo contém as configurações padrão para o deploy do Free5GC
+# usando os charts do Helm.
 
+# Configurações globais para o deploy do Free5GC
 global:
-  name: free5gc
-  userPlaneArchitecture: single  # possible values are "single" and "ulcl"
-  nrf:
+  name: free5gc 
+  userPlaneArchitecture: single 
+  nrf: # Configurações para a Network Repository Function (NRF)
     service:
       name: nrf-nnrf
-      type: ClusterIP
+      type: ClusterIP 
       port: "8000"
-      nodePort: "30800"
-  sbi:
-    scheme: http
-  amf:
-    n2if:  # NGAP
+      nodePort: "30800" 
+  sbi: 
+    scheme: http 
+  amf: 
+    n2if:  # Interface N2 (NGAP) para comunicação com o gNB
       ipAddress: 10.100.50.249
     service:
       ngap:
-        enabled: true
+        enabled: true #Habilita a exposição do serviço NGAP para o gNB se conectar ao AMF via NodePort.
         name: amf-n2
         port: 38412
-        nodeport: 31412
-        protocol: SCTP
+        nodeport: 31412 
+        protocol: SCTP 
         type: NodePort
-  upf:
-    service:
-      n3:
-        enabled: true
-        name: upf-n3
-        port: 2152
-        nodeport: 32152
-        protocol: UDP
-        type: NodePort
-  smf:
+  smf: # Configurações globas para o SMF (Session Management Function)
     n4if:
-      ipAddress: 10.100.50.244
-  #Global network parametes
-  n2network:
+      ipAddress: 10.100.50.244 
+
+  n2network: # Configuração para a rede N2 (AMF <-> gNB)
     enabled: true
     name: n2network
     type: ipvlan
-    masterIf: eth0
+    masterIf: eth0 
     subnetIP: 10.100.50.248
     cidr: 29
     gatewayIP: 10.100.50.254
     excludeIP: 10.100.50.254
-  n3network:
+  n3network: # Configuração para a rede N3 (gNB <-> UPF)
     enabled: true
     name: n3network
     type: ipvlan
-    masterIf: eth0
+    masterIf: eth0 
     subnetIP: 10.100.50.232
     cidr: 29
     gatewayIP: 10.100.50.238
     excludeIP: 10.100.50.238
-  n4network:
+  n4network: # Configuração para a rede N4 (SMF <-> UPF)
     enabled: true
     name: n4network
     type: ipvlan
-    masterIf: eth0
+    masterIf: eth0 
     subnetIP: 10.100.50.240
     cidr: 29
     gatewayIP: 10.100.50.246
     excludeIP: 10.100.50.246
-  n6network:
+  n6network: # Configuração para a rede N6 (UPF <-> Data Network/Internet)
     enabled: true
     name: n6network
-    type: ipvlan
-    masterIf: eth0
-    subnetIP: 172.18.0.0
-    cidr: 24
-    gatewayIP: 172.18.0.1
-    excludeIP: 172.18.0.1
-  n9network:
+    type: ipvlan 
+    masterIf: eth0 
+    subnetIP: 172.18.0.0 
+    cidr: 16 
+    gatewayIP: 172.18.0.1 
+    excludeIP: 172.18.0.0 
+  n9network: # Configuração para a rede N9 (UPF <-> outro UPF/DN)
     enabled: true
     name: n9network
     type: ipvlan
-    masterIf: eth0
+    masterIf: eth0 
     subnetIP: 10.100.50.224
     cidr: 29
     gatewayIP: 10.100.50.230
     excludeIP: 10.100.50.230
 
 
-# These parameters can be used to enable/disable deployment of subcharts
+# Estes parâmetros podem ser usados para habilitar/desabilitar o deployment de subcharts
 deployMongoDb: true
 deployAmf: true
 deployAusf: true
@@ -110,37 +92,10 @@ deployUpf: true
 deployWebui: true
 deployDbPython: true
 
-# Disable the deployment of mongodb as an NRF subchart
 free5gc-nrf:
   db:
     enabled: false
 
-# Configuração para o AMF e UPF escutarem em todas as interfaces
-free5gc-amf:
-  amf:
-    configuration:
-      cfgFiles:
-        amfcfg.yaml:
-          configuration:
-            ngapIpList:
-              - 0.0.0.0  # Listen on all interfaces
-
-free5gc-upf:
-  upf:
-    securityContext:
-      privileged: true
-      capabilities:
-        add: ["NET_ADMIN", "SYS_ADMIN"]
-    n6if:
-      ipAddress: 172.18.0.22
-    configuration:
-      cfgFiles:
-        upfcfg.yaml:
-          configuration:
-            gtpu:
-              addr: 0.0.0.0  # Listen on all interfaces
-
-# This section can be used to override the default values in the MongoDB chart
 mongodb:
   fullnameOverride: "mongodb"
   useStatefulSet: true
@@ -154,3 +109,39 @@ mongodb:
     type: ClusterIP
     port: 27017
     nodePort: "30017"
+
+# Configurações para o AMF escutar em todas as interfaces
+free5gc-amf:
+  amf:
+    configuration:
+      cfgFiles:
+        amfcfg.yaml:
+          configuration:
+            ngapIpList:
+              - 0.0.0.0 # Isso fará o AMF escutar conexões NGAP em todas as interfaces do pod.
+                        # Garante que o gNB possa se conectar ao AMF.
+
+# Configurações para UPF
+free5gc-upf:
+  upf:
+    configuration:
+      cfgFiles:
+        upfcfg.yaml:
+          configuration:
+            gtpu:
+              addr: 0.0.0.0 # O UPF irá escutar o tráfego GTP-U (N3) em todas as interfaces do pod.
+
+    # Adicione estas configurações para garantir privilégios adequados.
+    securityContext:
+      privileged: true # Concede privilégios elevados ao contêiner, necessário para o UPF.
+      capabilities:
+        add: ["NET_ADMIN", "SYS_ADMIN"]
+    n6if: # Configuração da interface N6 do UPF
+      ipAddress: 172.18.0.22 # O IP do UPF na rede N6. Deve estar na sub-rede do Kind (172.18.0.0/16).
+      service:
+        n3:
+          enabled: true
+          type: NodePort
+          port: 2152
+          nodePort: 32152
+          protocol: UDP
